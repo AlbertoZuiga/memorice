@@ -8,6 +8,14 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedCards = [];
   let isProcessing = false;
 
+  const shuffleValues = () => {
+    const values = Array.from(cards).map((card) => card.dataset.val);
+    const shuffled = values.toSorted(() => Math.random() - 0.5);
+    cards.forEach((card, index) => {
+      card.dataset.val = shuffled[index];
+    });
+  };
+
   const showCard = (card) => {
     card.classList.add("card-front");
     card.classList.remove("card-back");
@@ -55,5 +63,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  shuffleValues();
   cards.forEach((card) => card.addEventListener("click", handleCardClick));
 });
