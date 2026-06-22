@@ -1,45 +1,59 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // --- Constantes ---
   const FLIP_DELAY_MS = 600;
+  const PAIR_SIZE = 2;
 
   const turnsCounter = document.getElementById("turns_count");
-  const cards = document.querySelectorAll(".card");
 
+  // --- Estado del juego ---
   let turns = 0;
   let selectedCards = [];
   let isProcessing = false;
 
-  const shuffleValues = () => {
-    const values = Array.from(cards).map((card) => card.dataset.val);
-    const shuffled = values.toSorted(() => Math.random() - 0.5);
-    cards.forEach((card, index) => {
-      card.dataset.val = shuffled[index];
-    });
-  };
+  // --- Funciones puras ---
+  const getCards = () => Array.from(document.querySelectorAll(".card"));
 
+  const getValues = (cards) => cards.map((card) => card.dataset.val);
+
+  const shuffle = (values) => values.toSorted(() => Math.random() - 0.5);
+
+  const cardsMatch = (cardA, cardB) => cardA.dataset.val === cardB.dataset.val;
+
+  const isSelectable = (card) =>
+    !isProcessing &&
+    !card.classList.contains("card-front") &&
+    !card.classList.contains("hidden") &&
+    !selectedCards.includes(card);
+
+  // --- Efectos sobre el DOM ---
   const showCard = (card) => {
-    card.classList.add("card-front");
-    card.classList.remove("card-back");
+    card.classList.replace("card-back", "card-front");
     card.textContent = card.dataset.val;
   };
 
   const hideCard = (card) => {
-    card.classList.add("card-back");
-    card.classList.remove("card-front");
+    card.classList.replace("card-front", "card-back");
     card.textContent = "";
   };
 
-  const cardsMatch = (cardA, cardB) => cardA.dataset.val === cardB.dataset.val;
+  const removeCard = (card) => card.classList.add("hidden");
 
-  const resolveTurn = () => {
-    const [cardA, cardB] = selectedCards;
+  const assignValues = (cards, values) =>
+    cards.forEach((card, index) => {
+      card.dataset.val = values[index];
+    });
+
+  const updateTurns = () => {
+    turns += 1;
+    turnsCounter.textContent = turns;
+  };
+
+  // --- Lógica de turno ---
+  const resolveTurn = (cardA, cardB) => {
+    const action = cardsMatch(cardA, cardB) ? removeCard : hideCard;
     setTimeout(() => {
-      if (cardsMatch(cardA, cardB)) {
-        cardA.classList.add("hidden");
-        cardB.classList.add("hidden");
-      } else {
-        hideCard(cardA);
-        hideCard(cardB);
-      }
+      action(cardA);
+      action(cardB);
       selectedCards = [];
       isProcessing = false;
     }, FLIP_DELAY_MS);
@@ -47,22 +61,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const handleCardClick = (event) => {
     const card = event.target;
-    if (isProcessing || card.classList.contains("card-front") ||
-        selectedCards.includes(card)) {
-      return;
-    }
+    if (!isSelectable(card)) return;
 
     showCard(card);
     selectedCards.push(card);
 
-    if (selectedCards.length === 2) {
+    if (selectedCards.length === PAIR_SIZE) {
       isProcessing = true;
-      turns += 1;
-      turnsCounter.textContent = turns;
-      resolveTurn();
+      updateTurns();
+      resolveTurn(selectedCards[0], selectedCards[1]);
     }
   };
 
-  shuffleValues();
-  cards.forEach((card) => card.addEventListener("click", handleCardClick));
+  // --- Inicialización ---
+  const init = () => {
+    const cards = getCards();
+    assignValues(cards, shuffle(getValues(cards)));
+    cards.forEach((card) => card.addEventListener("click", handleCardClick));
+  };
+
+  init();
 });
